@@ -329,6 +329,7 @@ modelUpdatedWithResponse = function(model, response) {
 };
 
 backboneSync = Backbone.DualStorage.originalSync = Backbone.sync;
+Backbone.DualStorage.localSync = localsync;
 
 onlineSync = function(method, model, options) {
   options.success = callbackTranslator.forBackboneCaller(options.success);
