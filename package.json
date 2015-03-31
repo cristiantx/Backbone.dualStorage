@@ -2,13 +2,13 @@
   "name": "Backbone.dualStorage",
   "version": "1.4.0",
   "description": "A dual (localStorage and REST) sync adapter for Backbone.js",
-  "main": "backbone.dualstorage.js",
+  "main": "backbone.dualstorage.amd.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/cristiantx/Backbone.dualStorage.amd.git"
+    "url": "git://github.com/cristiantx/Backbone.dualStorage.git"
   },
   "keywords": [
     "backbone",
