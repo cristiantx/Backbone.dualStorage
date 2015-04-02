@@ -27,7 +27,6 @@
       localStorage.setItem('cats1', '{"_id": "1", "color": "translucent"}');
       localStorage.setItem('cats2', '{"_id": "2", "color": "auburn"}');
       localStorage.setItem('cats3', '{"_id": "3", "color": "burgundy"}');
-      localStorage.setItem('cats5', '{"_id": "3", "color": "burgundy"}');
       localStorage.setItem('catsa', '{"_id": "a", "color": "scarlet"}');
       localStorage.setItem('catsnew', '{"_id": "deadbeef-c03d-f00d-aced-dec0ded4b1ff", "color": "pearl"}');
       Collection = Backbone.Collection.extend({

@@ -27,6 +27,22 @@ Backbone.Model.prototype.hasTempId = function() {
   return _.isString(this.id) && this.id.length === 36 && this.id.indexOf('t') === 0;
 };
 
+Backbone.Model.prototype.isDirtyOrDestroyed = function() {
+  var store;
+  store = new Store(getStoreName(this.collection, this));
+  if (store.hasDirty()) {
+    return 'dirty';
+  }
+  if (store.hasDestroyed()) {
+    return 'destroyed';
+  }
+  return false;
+};
+
+Backbone.Model.prototype.discard = function(what) {
+  return new Store(getStoreName(this.collection, this)).discard(what);
+};
+
 getStoreName = function(collection, model) {
   model || (model = collection.model.prototype);
   return _.result(collection, 'storeName') || _.result(model, 'storeName') || _.result(collection, 'url') || _.result(model, 'urlRoot') || _.result(model, 'url');
@@ -86,6 +102,22 @@ Backbone.Collection.prototype.syncDirtyAndDestroyed = function(options) {
   return this.syncDestroyed(options);
 };
 
+Backbone.Collection.prototype.dirtyRecords = function() {
+  return new Store(getStoreName(this)).dirtyRecords();
+};
+
+Backbone.Collection.prototype.destroyedRecords = function() {
+  return new Store(getStoreName(this)).destroyedRecords();
+};
+
+Backbone.Collection.prototype.hasDirtyOrDestroyed = function() {
+  return new Store(getStoreName(this)).hasDirtyOrDestroyed();
+};
+
+Backbone.Collection.prototype.discard = function(what) {
+  return new Store(getStoreName(this)).discard(what);
+};
+
 S4 = function() {
   return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
 };
@@ -110,6 +142,35 @@ window.Store = (function() {
     var store;
     store = localStorage.getItem(key);
     return (store && store.split(',')) || [];
+  };
+
+  Store.prototype.dirtyRecords = function() {
+    return this.recordsOn(this.name + '_dirty');
+  };
+
+  Store.prototype.destroyedRecords = function() {
+    return this.recordsOn(this.name + '_destroyed');
+  };
+
+  Store.prototype.discard = function(what) {
+    var i, id, ids, j, len, len1;
+    if (!what || what === 'dirty') {
+      ids = this.dirtyRecords();
+      for (i = 0, len = ids.length; i < len; i++) {
+        id = ids[i];
+        localStorage.removeItem(this.name + this.sep + id);
+      }
+      localStorage.setItem(this.name + '_dirty', []);
+    }
+    if (!what || what === 'destroyed') {
+      ids = this.destroyedRecords();
+      for (j = 0, len1 = ids.length; j < len1; j++) {
+        id = ids[j];
+        localStorage.removeItem(this.name + this.sep + id);
+      }
+      localStorage.setItem(this.name + '_destroyed', []);
+    }
+    return this;
   };
 
   Store.prototype.dirty = function(model) {
@@ -175,12 +236,25 @@ window.Store = (function() {
     return this.save();
   };
 
+  Store.prototype.hasDirty = function() {
+    return !_.isEmpty(localStorage.getItem(this.name + '_dirty'));
+  };
+
+  Store.prototype.hasDestroyed = function() {
+    return !_.isEmpty(localStorage.getItem(this.name + '_destroyed'));
+  };
+
   Store.prototype.hasDirtyOrDestroyed = function() {
-    return !_.isEmpty(localStorage.getItem(this.name + '_dirty')) || !_.isEmpty(localStorage.getItem(this.name + '_destroyed'));
+    return this.hasDirty() || this.hasDestroyed();
   };
 
   Store.prototype.find = function(model) {
     var modelAsJson;
+    if (!model.id && !model.collection && this.records.length >= 1) {
+      model.set(model.idAttribute, this.records[0], {
+        silent: true
+      });
+    }
     modelAsJson = localStorage.getItem(this.name + this.sep + model.id);
     if (modelAsJson === null) {
       return null;
@@ -342,10 +416,10 @@ dualsync = function(method, model, options) {
   options.storeExists = Store.exists(options.storeName);
   options.success = callbackTranslator.forDualstorageCaller(options.success, model, options);
   options.error = callbackTranslator.forDualstorageCaller(options.error, model, options);
-  if (_.result(model, 'remote') || _.result(model.collection, 'remote')) {
+  if (_.result(model, 'remote') || _.result(model.collection, 'remote') || options.remote) {
     return onlineSync(method, model, options);
   }
-  local = _.result(model, 'local') || _.result(model.collection, 'local');
+  local = _.result(model, 'local') || _.result(model.collection, 'local') || options.local;
   options.dirty = options.remote === false && !local;
   if (options.remote === false || local) {
     return localsync(method, model, options);
